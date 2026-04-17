@@ -16,11 +16,6 @@ export const matchIdParamSchema = z.object({
     id: z.coerce.number().int().positive(),
 });
 
-const isValidISODate = (value) => {
-    const date = new Date(value);
-    return !isNaN(date.getTime());
-};
-
 // Create match
 export const createMatchSchema = z
     .object({
@@ -28,13 +23,8 @@ export const createMatchSchema = z
         homeTeam: z.string().min(1, "Home team is required"),
         awayTeam: z.string().min(1, "Away team is required"),
 
-        startTime: z
-            .string()
-            .refine(isValidISODate, { message: "Invalid ISO date string" }),
-
-        endTime: z
-            .string()
-            .refine(isValidISODate, { message: "Invalid ISO date string" }),
+        startTime: z.iso.datetime(),
+        endTime: z.iso.datetime(),
 
         homeScore: z.coerce.number().int().min(0).optional(),
         awayScore: z.coerce.number().int().min(0).optional(),
