@@ -1,4 +1,5 @@
 import { WebSocket, WebSocketServer } from "ws";
+import { wsArcjet } from "../arcjet.js";
 
 function sendJson(socket, payload) {
     if (socket.readyState !== WebSocket.OPEN) {
@@ -33,8 +34,35 @@ export function attachWebSocketServer(server) {
         maxPayload: 1024 * 1024,
     });
 
-    wss.on("connection", (socket) => {
+    wss.on("connection", async (socket, req) => {
+        if (wsArcjet) {
+            try {
+                const decision = await wsArcjet.protect(req);
+
+                if (decision.conclusion === "ERROR") {
+                    console.error("Arcjet WS error:", decision.reason);
+                    socket.close(1011, "Internal error");
+                    return;
+                }
+
+                if (decision.isDenied()) {
+                    const isRateLimit = decision.reason?.isRateLimit?.();
+
+                    socket.close(
+                        1008,
+                        isRateLimit ? "Rate limit exceeded" : "Forbidden"
+                    );
+                    return;
+                }
+            } catch (e) {
+                console.error("WS protection error", e);
+                socket.close(1011, "Internal error");
+                return;
+            }
+        }
+
         socket.isAlive = true;
+
         socket.on("pong", () => {
             socket.isAlive = true;
         });
@@ -56,7 +84,7 @@ export function attachWebSocketServer(server) {
     wss.on("close", () => clearInterval(interval));
 
     function broadcastMatchCreated(match) {
-        broadcastToAll(wss, { type: 'match_created', data: match });
+        broadcastToAll(wss, { type: "match_created", data: match });
     };
 
     return { broadcastMatchCreated };

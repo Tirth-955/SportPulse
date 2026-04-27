@@ -6,6 +6,7 @@ dns.setDefaultResultOrder("ipv4first");
 
 import { matchRouter } from "./routes/matches.js";
 import { attachWebSocketServer } from "./ws/server.js";
+import { securityMiddleware } from "./arcjet.js";
 
 const PORT = Number(process.env.PORT || 8000);
 const HOST = process.env.HOST || "0.0.0.0";
@@ -18,6 +19,8 @@ app.use(express.json());
 app.get("/", (req, res) => {
     res.send("Hello From SERVER");
 });
+
+app.use(securityMiddleware());
 
 app.use("/matches", matchRouter);
 
