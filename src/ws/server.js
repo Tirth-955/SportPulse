@@ -29,47 +29,51 @@ function broadcastToAll(wss, payload) {
 
 export function attachWebSocketServer(server) {
     const wss = new WebSocketServer({
-        server,
+        noServer: true,
         path: "/ws",
         maxPayload: 1024 * 1024,
+        perMessageDeflate: false,
     });
 
-    wss.on("connection", async (socket, req) => {
+    server.on('upgrade', async (req, socket, head) => {
+        const { pathname } = new URL(req.url, `http://${req.headers.host}`);
+
+        if (pathname !== '/ws') {
+            socket.destroy();
+            return;
+        }
+
         if (wsArcjet) {
             try {
                 const decision = await wsArcjet.protect(req);
 
                 if (decision.conclusion === "ERROR") {
                     console.error("Arcjet WS error:", decision.reason);
-                    socket.close(1011, "Internal error");
+                    socket.write('HTTP/1.1 503 Service Unavailable\r\n\r\n');
+                    socket.destroy();
                     return;
                 }
 
                 if (decision.isDenied()) {
                     const isRateLimit = decision.reason?.isRateLimit?.();
 
-                    socket.close(
-                        1008,
-                        isRateLimit ? "Rate limit exceeded" : "Forbidden"
+                    socket.write(
+                        `HTTP/1.1 ${isRateLimit ? 429 : 403} ${isRateLimit ? 'Too Many Requests' : 'Forbidden'}\r\n\r\n`
                     );
+                    socket.destroy();
                     return;
                 }
             } catch (e) {
-                console.error("WS protection error", e);
-                socket.close(1011, "Internal error");
+                // console.error('WS upgrade protection error', e);
+                socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\n');
+                socket.destroy();
                 return;
             }
         }
 
-        socket.isAlive = true;
-
-        socket.on("pong", () => {
-            socket.isAlive = true;
+        wss.handleUpgrade(req, socket, head, (ws) => {
+            wss.emit("connection", ws, req);
         });
-
-        sendJson(socket, { type: "welcome" });
-
-        socket.on("error", console.error);
     });
 
     const interval = setInterval(() => {

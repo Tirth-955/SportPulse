@@ -14,8 +14,8 @@ export const httpArcjet = arcjetKey ?
         key: arcjetKey,
         rules: [
             shield({ mode: arcjetMode }),
-            detectBot({ mode: arcjetMode, allow: ["CATEGORY:SEARCH_ENGINE", "CATEGORY:PREVIEW"] }),
-            slidingWindow({ mode: arcjetMode, interval: "10s", max: 50 })
+            // detectBot({ mode: arcjetMode, allow: ["CATEGORY:SEARCH_ENGINE", "CATEGORY:PREVIEW"], skip: (req) => !req.headers["user-agent"], }),
+            slidingWindow({ mode: arcjetMode, interval: "10s", max: 50 }),
         ],
     }) : null;
 
@@ -25,8 +25,8 @@ export const wsArcjet = arcjetKey ?
         key: arcjetKey,
         rules: [
             shield({ mode: arcjetMode }),
-            detectBot({ mode: arcjetMode, allow: ["CATEGORY:SEARCH_ENGINE", "CATEGORY:PREVIEW"] }),
-            slidingWindow({ mode: arcjetMode, interval: "2s", max: 5 })
+            // detectBot({ mode: arcjetMode, allow: ["CATEGORY:SEARCH_ENGINE", "CATEGORY:PREVIEW"], skip: (req) => !req.headers["user-agent"], }),
+            slidingWindow({ mode: arcjetMode, interval: "2s", max: 5 }),
         ],
     }) : null;
 
