@@ -7,6 +7,7 @@ import { getMatchStatus } from "../utils/matchStatus.js";
 import { desc } from "drizzle-orm";
 import { catchAsync } from "../utils/catchAsync.js";
 import { AppError } from "../utils/AppError.js";
+import { protect } from "../middleware/auth.js";
 
 export const matchRouter = Router();
 
@@ -30,7 +31,7 @@ matchRouter.get("/", catchAsync(async (req, res, next) => {
     res.json({ data });
 }));
 
-matchRouter.post("/", catchAsync(async (req, res, next) => {
+matchRouter.post("/", protect, catchAsync(async (req, res, next) => {
     const parsed = createMatchSchema.safeParse(req.body);
 
     if (!parsed.success) {
