@@ -33,6 +33,8 @@ export default function Dashboard() {
         awayTeam,
         startTime: new Date(startTime).toISOString(),
         endTime: new Date(endTime).toISOString(),
+        homeScore: 0,
+        awayScore: 0,
       });
 
       setIsModalOpen(false);

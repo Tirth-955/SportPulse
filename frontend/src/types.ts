@@ -12,6 +12,10 @@ export interface Commentary {
   id: string | number;
   message: string;
   minute: number;
+  period?: string;
+  eventType?: string;
+  actor?: string;
+  team?: string;
   createdAt?: string;
   matchId?: string;
 }

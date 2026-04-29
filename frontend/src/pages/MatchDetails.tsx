@@ -12,6 +12,10 @@ export default function MatchDetails() {
   const navigate = useNavigate();
   const [newText, setNewText] = useState("");
   const [minute, setMinute] = useState("");
+  const [period, setPeriod] = useState("");
+  const [eventType, setEventType] = useState("");
+  const [actor, setActor] = useState("");
+  const [team, setTeam] = useState("");
   const [match, setMatch] = useState<Match | null>(null);
 
   const { commentary, status, setCommentary } = useWebSocket(id);
@@ -39,9 +43,20 @@ export default function MatchDetails() {
     if (!id || !newText || !minute) return;
 
     try {
-      await api.postCommentary(id, newText, parseInt(minute));
+      await api.postCommentary(id, {
+        message: newText,
+        minute: parseInt(minute),
+        ...(period && { period }),
+        ...(eventType && { eventType }),
+        ...(actor && { actor }),
+        ...(team && { team }),
+      });
       setNewText("");
       setMinute("");
+      setPeriod("");
+      setEventType("");
+      setActor("");
+      setTeam("");
       // No state append needed; WebSocket handles the live update
     } catch (err: any) {
       alert(err.message || "Failed to post commentary");
@@ -50,7 +65,7 @@ export default function MatchDetails() {
 
   return (
     <div className="max-w-5xl mx-auto p-6">
-      <header className="flex justify-between items-center mb-8 border-b border-surface-hover pb-6">
+      <header className="flex justify-between items-center pb-6">
         <button
           onClick={() => navigate("/dashboard")}
           className="flex items-center gap-2 px-3 py-1.5 text-sm text-text-muted hover:text-white bg-surface hover:bg-surface-hover rounded-lg transition-colors"
@@ -87,34 +102,89 @@ export default function MatchDetails() {
 
       <div className="grid md:grid-cols-12 gap-8">
         <div className="md:col-span-4">
-          <div className="bg-surface border border-surface-hover rounded-2xl p-6 sticky top-6 shadow-lg">
-            <h2 className="font-semibold mb-6 text-lg flex items-center gap-2">
+          <div className="bg-surface border border-surface-hover rounded-2xl p-1 sticky top-6 shadow-lg">
+            <h2 className="font-semibold mb-2 text-lg flex items-center gap-2">
               <Send className="w-5 h-5 text-primary" /> Post Update
             </h2>
-            <form onSubmit={handleAddCommentary} className="space-y-5">
+            <form onSubmit={handleAddCommentary} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-text-muted mb-1.5">
+                    Minute *
+                  </label>
+                  <input
+                    type="number"
+                    value={minute}
+                    onChange={(e) => setMinute(e.target.value)}
+                    placeholder="e.g. 45"
+                    className="w-full px-3 py-2 bg-background border border-surface-hover rounded-xl text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-text-muted mb-1.5">
+                    Period
+                  </label>
+                  <input
+                    type="text"
+                    value={period}
+                    onChange={(e) => setPeriod(e.target.value)}
+                    placeholder="e.g. 1H, 2H"
+                    className="w-full px-3 py-2 bg-background border border-surface-hover rounded-xl text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-text-muted mb-1.5">
+                    Event Type
+                  </label>
+                  <input
+                    type="text"
+                    value={eventType}
+                    onChange={(e) => setEventType(e.target.value)}
+                    placeholder="e.g. goal, foul"
+                    className="w-full px-3 py-2 bg-background border border-surface-hover rounded-xl text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-text-muted mb-1.5">
+                    Team
+                  </label>
+                  <input
+                    type="text"
+                    value={team}
+                    onChange={(e) => setTeam(e.target.value)}
+                    placeholder="e.g. Real Madrid"
+                    className="w-full px-3 py-2 bg-background border border-surface-hover rounded-xl text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                  />
+                </div>
+              </div>
+
               <div>
-                <label className="block text-sm font-medium text-text-muted mb-2">
-                  Minute
+                <label className="block text-xs font-medium text-text-muted mb-1.5">
+                  Actor / Player
                 </label>
                 <input
-                  type="number"
-                  value={minute}
-                  onChange={(e) => setMinute(e.target.value)}
-                  placeholder="e.g. 45"
-                  className="w-full px-4 py-3 bg-background border border-surface-hover rounded-xl text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                  required
+                  type="text"
+                  value={actor}
+                  onChange={(e) => setActor(e.target.value)}
+                  placeholder="e.g. Sunil Chettri"
+                  className="w-full px-3 py-2 bg-background border border-surface-hover rounded-xl text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                 />
               </div>
+
               <div>
-                <label className="block text-sm font-medium text-text-muted mb-2">
-                  Commentary Text
+                <label className="block text-xs font-medium text-text-muted mb-1.5">
+                  Commentary Text *
                 </label>
                 <textarea
                   value={newText}
                   onChange={(e) => setNewText(e.target.value)}
-                  placeholder="Goal! What a fantastic strike..."
-                  rows={5}
-                  className="w-full px-4 py-3 bg-background border border-surface-hover rounded-xl text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none transition-all"
+                  placeholder="GOAL! Sunil cuts inside..."
+                  rows={4}
+                  className="w-full px-3 py-2 bg-background border border-surface-hover rounded-xl text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none transition-all"
                   required
                 />
               </div>

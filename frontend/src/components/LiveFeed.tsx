@@ -30,7 +30,24 @@ export function LiveFeed({ commentary }: LiveFeedProps) {
           <div className="flex-shrink-0 w-14 h-14 rounded-full bg-background flex items-center justify-center font-bold text-lg text-primary border border-surface-hover group-hover:border-primary/50 group-hover:scale-110 transition-all shadow-inner">
             {c.minute}'
           </div>
-          <div className="pt-1">
+          <div className="pt-1 w-full">
+            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+              {c.period && (
+                <span className="px-2 py-0.5 text-[10px] font-bold tracking-wider text-primary bg-primary/10 rounded uppercase">
+                  {c.period}
+                </span>
+              )}
+              {c.eventType && (
+                <span className="px-2 py-0.5 text-[10px] font-bold tracking-wider text-purple-400 bg-purple-400/10 rounded uppercase">
+                  {c.eventType}
+                </span>
+              )}
+              {(c.actor || c.team) && (
+                <span className="text-sm font-semibold text-text">
+                  {c.actor} {c.actor && c.team && "-"} {c.team}
+                </span>
+              )}
+            </div>
             <p className="text-text leading-relaxed text-[15px]">{c.message}</p>
             <p className="text-xs text-text-muted mt-3 font-medium flex items-center gap-1.5">
               <Clock className="w-3 h-3" />{" "}

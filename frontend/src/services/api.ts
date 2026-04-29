@@ -55,11 +55,14 @@ export const api = {
     return json.data || [];
   },
 
-  async postCommentary(id: string, text: string, minute: number): Promise<void> {
+  async postCommentary(
+    id: string,
+    data: { message: string; minute: number; period?: string; eventType?: string; actor?: string; team?: string }
+  ): Promise<void> {
     const res = await fetch(`/api/v1/matches/${id}/commentary`, {
       method: "POST",
       headers: getHeaders(),
-      body: JSON.stringify({ message: text, minute }),
+      body: JSON.stringify(data),
     });
 
     if (!res.ok) {
