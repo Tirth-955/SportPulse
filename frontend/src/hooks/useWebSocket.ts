@@ -14,19 +14,23 @@ export function useWebSocket(matchId?: string) {
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const wsUrl = `${protocol}//${window.location.host}/ws`;
 
-    ws.current = new WebSocket(wsUrl);
+    const socket = new WebSocket(wsUrl);
+    ws.current = socket;
 
-    ws.current.onopen = () => {
+    socket.onopen = () => {
+      console.log("WebSocket Connected !");
       setStatus("connected");
       // Explicitly subscribe to this match ID!
       if (matchId) {
-        ws.current?.send(
+        console.log(`Subscribing to match ${matchId}`);
+        socket.send(
           JSON.stringify({ type: "subscribe", matchId: parseInt(matchId) })
         );
       }
     };
 
-    ws.current.onmessage = (event) => {
+    socket.onmessage = (event) => {
+      console.log("Message received from server: ", event.data);
       try {
         const data = JSON.parse(event.data);
         if (String(data.data?.matchId || matchId) === matchId) {
@@ -44,13 +48,13 @@ export function useWebSocket(matchId?: string) {
       }
     };
 
-    ws.current.onclose = () => {
+    socket.onclose = () => {
       setStatus("disconnected");
       // Attempt auto-reconnect after 3s
       setTimeout(connect, 3000);
     };
 
-    ws.current.onerror = () => {
+    socket.onerror = () => {
       setStatus("error");
     };
   }, [matchId]);
@@ -59,8 +63,8 @@ export function useWebSocket(matchId?: string) {
     connect();
 
     return () => {
-      if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-        if (matchId) {
+      if (ws.current) {
+        if (ws.current.readyState === WebSocket.OPEN && matchId) {
           // Clean up by unsubscribing
           ws.current.send(
             JSON.stringify({ type: "unsubscribe", matchId: parseInt(matchId) })
