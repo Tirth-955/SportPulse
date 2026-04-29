@@ -70,4 +70,17 @@ export const api = {
       throw new Error(error.message || "Failed to post commentary");
     }
   },
+
+  async updateScore(id: string, homeScore: number, awayScore: number): Promise<void> {
+    const res = await fetch(`/api/v1/matches/${id}/score`, {
+      method: "PATCH",
+      headers: getHeaders(),
+      body: JSON.stringify({ homeScore, awayScore }),
+    });
+
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.message || "Failed to update score");
+    }
+  },
 };

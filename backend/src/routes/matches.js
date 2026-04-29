@@ -86,3 +86,35 @@ matchRouter.post("/", protect, catchAsync(async (req, res, next) => {
 
     res.status(201).json({ data: event });
 }));
+
+matchRouter.patch("/:id/score", protect, catchAsync(async (req, res, next) => {
+    const paramsResult = matchIdParamSchema.safeParse(req.params);
+    if (!paramsResult.success) {
+        return next(new AppError("Invalid Match ID.", 400, paramsResult.error.issues));
+    }
+
+    const { updateScoreSchema } = await import("../validation/matches.js");
+
+    const bodyResult = updateScoreSchema.safeParse(req.body);
+    if (!bodyResult.success) {
+        return next(new AppError("Invalid Score Payload.", 400, bodyResult.error.issues));
+    }
+
+    const { id: matchId } = paramsResult.data;
+    const { homeScore, awayScore } = bodyResult.data;
+
+    const [updatedMatch] = await db.update(matches)
+        .set({ homeScore, awayScore })
+        .where(eq(matches.id, matchId))
+        .returning();
+
+    if (!updatedMatch) {
+        return next(new AppError("Match not found.", 404));
+    }
+
+    if (res.app.locals.broadcastScoreUpdate) {
+        res.app.locals.broadcastScoreUpdate(matchId, { homeScore, awayScore });
+    }
+
+    res.json({ data: updatedMatch });
+}));

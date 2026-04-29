@@ -18,7 +18,19 @@ export default function MatchDetails() {
   const [team, setTeam] = useState("");
   const [match, setMatch] = useState<Match | null>(null);
 
-  const { commentary, status, setCommentary } = useWebSocket(id);
+  const { commentary, status, liveScore, setCommentary } = useWebSocket(id);
+
+  const currentHomeScore = liveScore?.homeScore ?? match?.homeScore ?? 0;
+  const currentAwayScore = liveScore?.awayScore ?? match?.awayScore ?? 0;
+
+  const handleUpdateScore = async (homeScore: number, awayScore: number) => {
+    if (!id) return;
+    try {
+      await api.updateScore(id, homeScore, awayScore);
+    } catch (err: any) {
+      alert(err.message || "Failed to update score");
+    }
+  };
 
   // Fetch initial match info & past commentary
   useEffect(() => {
@@ -89,10 +101,76 @@ export default function MatchDetails() {
               Match ID: {id}
             </span>
           </div>
-          <h1 className="text-4xl font-bold tracking-tight">
-            {match
-              ? `${match.homeTeam} vs ${match.awayTeam}`
-              : "Loading Match..."}
+          <h1 className="text-4xl font-bold tracking-tight text-center md:text-left">
+            {match ? (
+              <div className="flex items-center gap-6">
+                <div className="flex flex-col items-center">
+                  <span className="text-2xl mb-1">{match.homeTeam}</span>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() =>
+                        handleUpdateScore(
+                          Math.max(0, currentHomeScore - 1),
+                          currentAwayScore,
+                        )
+                      }
+                      className="w-8 h-8 rounded-full bg-surface-hover hover:bg-primary text-white flex items-center justify-center font-bold transition-colors"
+                    >
+                      -
+                    </button>
+                    <span className="text-primary font-black">
+                      {currentHomeScore}
+                    </span>
+                    <button
+                      onClick={() =>
+                        handleUpdateScore(
+                          currentHomeScore + 1,
+                          currentAwayScore,
+                        )
+                      }
+                      className="w-8 h-8 rounded-full bg-surface-hover hover:bg-primary text-white flex items-center justify-center font-bold transition-colors"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+                <span className="text-3xl text-text-muted font-light mt-8">
+                  -
+                </span>
+                <div className="flex flex-col items-center">
+                  <span className="text-2xl mb-1">{match.awayTeam}</span>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() =>
+                        handleUpdateScore(
+                          currentHomeScore,
+                          Math.max(0, currentAwayScore - 1),
+                        )
+                      }
+                      className="w-8 h-8 rounded-full bg-surface-hover hover:bg-primary text-white flex items-center justify-center font-bold transition-colors"
+                    >
+                      -
+                    </button>
+                    <span className="text-primary font-black">
+                      {currentAwayScore}
+                    </span>
+                    <button
+                      onClick={() =>
+                        handleUpdateScore(
+                          currentHomeScore,
+                          currentAwayScore + 1,
+                        )
+                      }
+                      className="w-8 h-8 rounded-full bg-surface-hover hover:bg-primary text-white flex items-center justify-center font-bold transition-colors"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              "Loading Match..."
+            )}
           </h1>
         </div>
         <div>

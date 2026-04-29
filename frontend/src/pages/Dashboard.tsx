@@ -162,7 +162,12 @@ export default function Dashboard() {
                   <option value="football">Football</option>
                   <option value="basketball">Basketball</option>
                   <option value="tennis">Tennis</option>
-                  <option value="cricket">Cricket</option>
+                  <option value="badminton">Badminton</option>
+                  <option value="hockey">Hockey</option>
+                  <option value="boxing">Boxing</option>
+                  <option value="chess">Chess</option>
+                  <option value="volleyball">Volleyball</option>
+                  <option value="kabaddi">Kabaddi</option>
                 </select>
               </div>
 

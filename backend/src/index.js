@@ -44,9 +44,10 @@ app.use((req, res, next) => {
 // Global error handling middleware
 app.use(errorHandler);
 
-const { broadcastMatchCreated, broadcastCommentary } = attachWebSocketServer(server);
+const { broadcastMatchCreated, broadcastCommentary, broadcastScoreUpdate } = attachWebSocketServer(server);
 app.locals.broadcastMatchCreated = broadcastMatchCreated;
 app.locals.broadcastCommentary = broadcastCommentary;
+app.locals.broadcastScoreUpdate = broadcastScoreUpdate;
 
 server.listen(PORT, HOST, () => {
     const baseUrl = HOST === '0.0.0.0' ? `http://localhost:${PORT}` : `http://${HOST}:${PORT}`;

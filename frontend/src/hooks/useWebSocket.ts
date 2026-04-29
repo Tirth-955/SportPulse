@@ -3,6 +3,7 @@ import { Commentary, ConnectionStatus } from "../types";
 
 export function useWebSocket(matchId?: string) {
   const [commentary, setCommentary] = useState<Commentary[]>([]);
+  const [liveScore, setLiveScore] = useState<{ homeScore: number; awayScore: number } | null>(null);
   const [status, setStatus] = useState<ConnectionStatus>("disconnected");
   const ws = useRef<WebSocket | null>(null);
 
@@ -28,8 +29,15 @@ export function useWebSocket(matchId?: string) {
     ws.current.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        if (data.type === "commentary" && String(data.data.matchId) === matchId) {
-          setCommentary((prev) => [data.data, ...prev]);
+        if (String(data.data?.matchId || matchId) === matchId) {
+          if (data.type === "commentary") {
+            setCommentary((prev) => [data.data, ...prev]);
+          } else if (data.type === "score_update") {
+            setLiveScore({
+              homeScore: data.data.homeScore,
+              awayScore: data.data.awayScore,
+            });
+          }
         }
       } catch (err) {
         console.error("WS parsing error", err);
@@ -63,5 +71,5 @@ export function useWebSocket(matchId?: string) {
     };
   }, [connect, matchId]);
 
-  return { commentary, status, setCommentary };
+  return { commentary, status, liveScore, setCommentary };
 }

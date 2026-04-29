@@ -33,6 +33,9 @@ export function MatchCard({ match }: { match: Match }) {
           <span className="flex items-center gap-1.5 uppercase tracking-wide text-xs font-bold">
             {match.sport}
           </span>
+          <span className="flex items-center gap-1.5 uppercase tracking-wide text-xs font-bold text-primary">
+            Score: {match.homeScore ?? 0} - {match.awayScore ?? 0}
+          </span>
         </div>
       </div>
       <div className="p-2 bg-background rounded-full group-hover:bg-primary/10 transition-colors">

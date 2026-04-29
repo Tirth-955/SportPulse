@@ -5,6 +5,8 @@ export interface Match {
   sport: string;
   startTime: string;
   endTime: string;
+  homeScore: number;
+  awayScore: number;
   status: "UPCOMING" | "LIVE" | "FINISHED";
 }
 
