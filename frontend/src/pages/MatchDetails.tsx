@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Send, Clock, Activity } from "lucide-react";
 
 interface Commentary {
-  id: number;
-  text: string;
+  id: string | number;
+  message: string;
   minute: number;
-  timestamp: string;
+  createdAt?: string;
+  matchId?: string;
 }
 
 export default function MatchDetails() {
@@ -15,24 +16,86 @@ export default function MatchDetails() {
   const [commentary, setCommentary] = useState<Commentary[]>([]);
   const [newText, setNewText] = useState("");
   const [minute, setMinute] = useState("");
+  const [match, setMatch] = useState<any>(null);
 
-  // Example match data
-  const match = { title: "Manchester City vs Arsenal", status: "LIVE" };
+  // Fetch initial match info & commentary
+  useEffect(() => {
+    const fetchMatchAndCommentary = async () => {
+      try {
+        const [matchRes, commRes] = await Promise.all([
+          fetch(`/api/v1/matches/${id}`),
+          fetch(`/api/v1/matches/${id}/commentary`),
+        ]);
 
-  const handleAddCommentary = (e: React.FormEvent) => {
+        if (matchRes.ok) {
+          const matchJson = await matchRes.json();
+          setMatch(matchJson.data);
+        }
+
+        if (commRes.ok) {
+          const commJson = await commRes.json();
+          setCommentary(commJson.data || []);
+        }
+      } catch (err) {
+        console.error("Failed to load match data", err);
+      }
+    };
+    fetchMatchAndCommentary();
+  }, [id]);
+
+  // Setup WebSocket for live updates
+  useEffect(() => {
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    const ws = new WebSocket(wsUrl);
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === "NEW_COMMENTARY" && data.payload.matchId === id) {
+          setCommentary((prev) => [data.payload, ...prev]);
+        }
+      } catch (err) {
+        console.error("WS parsing error", err);
+      }
+    };
+
+    return () => {
+      ws.close();
+    };
+  }, [id]);
+
+  const handleAddCommentary = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newText || !minute) return;
 
-    // Simulate sending to backend API (Port 8000)
-    const newEntry: Commentary = {
-      id: Date.now(),
-      text: newText,
-      minute: parseInt(minute),
-      timestamp: new Date().toISOString(),
-    };
-    setCommentary([newEntry, ...commentary]);
-    setNewText("");
-    setMinute("");
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/v1/matches/${id}/commentary`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          message: newText,
+          minute: parseInt(minute),
+        }),
+      });
+
+      if (res.ok) {
+        setNewText("");
+        setMinute("");
+        // We don't manually append to state here because we expect
+        // the WebSocket connection to broadcast it back to us!
+      } else {
+        const error = await res.json();
+        alert(error.message || "Failed to post commentary");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Network error");
+    }
   };
 
   return (
@@ -54,17 +117,19 @@ export default function MatchDetails() {
         <div className="flex items-center gap-3 mb-4">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold text-white bg-red-500 rounded-full animate-pulse shadow-lg shadow-red-500/20">
             <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
-            {match.status}
+            {match ? match.status : "LIVE"}
           </span>
           <span className="text-sm font-medium text-text-muted">
             Match ID: {id}
           </span>
         </div>
         <h1 className="text-4xl font-bold tracking-tight mb-2">
-          {match.title}
+          {match
+            ? `${match.homeTeam} vs ${match.awayTeam}`
+            : "Loading Match..."}
         </h1>
         <p className="text-primary text-sm font-medium mt-2">
-          API Connection: WebSocket -ws://localhost:8000 ready
+          Connected to WebSockets
         </p>
       </div>
 
@@ -138,10 +203,13 @@ export default function MatchDetails() {
                   </div>
                   <div className="pt-1">
                     <p className="text-text leading-relaxed text-[15px]">
-                      {c.text}
+                      {c.message}
                     </p>
                     <p className="text-xs text-text-muted mt-3 font-medium flex items-center gap-1.5">
-                      <Clock className="w-3 h-3" /> Just now via Admin Dashboard
+                      <Clock className="w-3 h-3" />{" "}
+                      {c.createdAt
+                        ? new Date(c.createdAt).toLocaleTimeString()
+                        : "Just now"}
                     </p>
                   </div>
                 </div>

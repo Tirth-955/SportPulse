@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Activity,
@@ -11,56 +11,74 @@ import {
 
 interface Match {
   id: string;
-  title: string;
-  date: string;
-  venue: string;
-  status: "LIVE" | "UPCOMING" | "FINISHED";
+  homeTeam: string;
+  awayTeam: string;
+  sport: string;
+  startTime: string;
+  endTime: string;
+  status: "UPCOMING" | "LIVE" | "FINISHED";
 }
-
-const DUMMY_MATCHES: Match[] = [
-  {
-    id: "1",
-    title: "Manchester City vs Arsenal",
-    date: "2026-05-12",
-    venue: "Etihad Stadium",
-    status: "LIVE",
-  },
-  {
-    id: "2",
-    title: "Real Madrid vs Barcelona",
-    date: "2026-05-14",
-    venue: "Santiago Bernabéu",
-    status: "UPCOMING",
-  },
-];
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const [matches, setMatches] = useState<Match[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  // New Match Form State
   const [sport, setSport] = useState("football");
   const [homeTeam, setHomeTeam] = useState("");
   const [awayTeam, setAwayTeam] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
 
-  const handleCreateMatch = (e: React.FormEvent) => {
+  const fetchMatches = async () => {
+    try {
+      const res = await fetch("/api/v1/matches");
+      const json = await res.json();
+      if (res.ok) {
+        setMatches(json.data || []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch matches:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchMatches();
+  }, []);
+
+  const handleCreateMatch = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate POST /matches API call
-    console.log("Creating Match:", {
-      sport,
-      homeTeam,
-      awayTeam,
-      startTime,
-      endTime,
-    });
-    setIsModalOpen(false);
-    // Reset form
-    setHomeTeam("");
-    setAwayTeam("");
-    setStartTime("");
-    setEndTime("");
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch("/api/v1/matches", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          sport,
+          homeTeam,
+          awayTeam,
+          startTime: new Date(startTime).toISOString(),
+          endTime: new Date(endTime).toISOString(),
+        }),
+      });
+
+      if (res.ok) {
+        setIsModalOpen(false);
+        setHomeTeam("");
+        setAwayTeam("");
+        setStartTime("");
+        setEndTime("");
+        fetchMatches(); // refresh list
+      } else {
+        const error = await res.json();
+        alert(error.message || "Failed to create match");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Network error");
+    }
   };
 
   return (
@@ -97,7 +115,7 @@ export default function Dashboard() {
       </div>
 
       <div className="grid gap-4">
-        {DUMMY_MATCHES.map((match) => (
+        {matches.map((match) => (
           <div
             key={match.id}
             onClick={() => navigate(`/match/${match.id}`)}
@@ -110,20 +128,21 @@ export default function Dashboard() {
                     LIVE
                   </span>
                 ) : (
-                  <span className="px-2.5 py-0.5 text-xs font-semibold text-primary bg-primary/10 rounded-full">
+                  <span className="px-2.5 py-0.5 text-xs font-semibold text-primary bg-primary/10 rounded-full uppercase">
                     {match.status}
                   </span>
                 )}
                 <h3 className="text-lg font-bold group-hover:text-primary transition-colors">
-                  {match.title}
+                  {match.homeTeam} vs {match.awayTeam}
                 </h3>
               </div>
               <div className="flex gap-4 text-sm text-text-muted">
                 <span className="flex items-center gap-1.5">
-                  <Calendar className="w-4 h-4" /> {match.date}
+                  <Calendar className="w-4 h-4" />{" "}
+                  {new Date(match.startTime).toLocaleDateString()}
                 </span>
-                <span className="flex items-center gap-1.5">
-                  <MapPin className="w-4 h-4" /> {match.venue}
+                <span className="flex items-center gap-1.5 uppercase tracking-wide text-xs font-bold">
+                  {match.sport}
                 </span>
               </div>
             </div>

@@ -4,21 +4,37 @@ import { Activity } from "lucide-react";
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState("");
+  // const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isLogin) {
-      // Simulate login API call (POST /login)
-      console.log("Logging in with", username, password);
-    } else {
-      // Simulate register API call (POST /register)
-      console.log("Registering with", email, username, password);
+    try {
+      const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
+      const body = { username, password };
+
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.message || "Authentication failed");
+        return;
+      }
+
+      // Save token
+      localStorage.setItem("token", data.token);
+      navigate("/dashboard");
+    } catch (err) {
+      console.error(err);
+      alert("Something went wrong!");
     }
-    navigate("/dashboard");
   };
 
   return (
@@ -37,7 +53,7 @@ export default function Login() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {!isLogin && (
+          {/* {!isLogin && (
             <div>
               <label className="block text-sm font-medium text-text-muted mb-1.5">
                 Email
@@ -51,7 +67,7 @@ export default function Login() {
                 required={!isLogin}
               />
             </div>
-          )}
+          )} */}
           <div>
             <label className="block text-sm font-medium text-text-muted mb-1.5">
               Username

@@ -26,9 +26,9 @@ app.get("/", (req, res) => {
 
 app.use(securityMiddleware());
 
-app.use("/auth", authRouter);
-app.use("/matches", matchRouter);
-app.use("/matches/:id/commentary", commentaryRouter);
+app.use("/api/v1/auth", authRouter);
+app.use("/api/v1/matches", matchRouter);
+app.use("/api/v1/matches/:id/commentary", commentaryRouter);
 
 // Catch unhandled routes
 app.use((req, res, next) => {
