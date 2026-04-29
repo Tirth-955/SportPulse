@@ -20,6 +20,8 @@ export default function MatchDetails() {
 
   const { commentary, status, liveScore, setCommentary } = useWebSocket(id);
 
+  const isAdmin = !!localStorage.getItem("token");
+
   const currentHomeScore = liveScore?.homeScore ?? match?.homeScore ?? 0;
   const currentAwayScore = liveScore?.awayScore ?? match?.awayScore ?? 0;
 
@@ -86,7 +88,9 @@ export default function MatchDetails() {
         </button>
         <div className="flex items-center gap-2">
           <Activity className="w-5 h-5 text-primary" />
-          <span className="font-semibold tracking-tight">SportPulse Admin</span>
+          <span className="font-semibold tracking-tight">
+            {isAdmin ? "SportPulse Admin" : "SportPulse Live"}
+          </span>
         </div>
       </header>
 
@@ -107,31 +111,13 @@ export default function MatchDetails() {
                 <div className="flex flex-col items-center">
                   <span className="text-2xl mb-1">{match.homeTeam}</span>
                   <div className="flex items-center gap-3">
-                    <button
-                      onClick={() =>
-                        handleUpdateScore(
-                          Math.max(0, currentHomeScore - 1),
-                          currentAwayScore,
-                        )
-                      }
-                      className="w-8 h-8 rounded-full bg-surface-hover hover:bg-primary text-white flex items-center justify-center font-bold transition-colors"
-                    >
-                      -
-                    </button>
-                    <span className="text-primary font-black">
-                      {currentHomeScore}
-                    </span>
-                    <button
-                      onClick={() =>
-                        handleUpdateScore(
-                          currentHomeScore + 1,
-                          currentAwayScore,
-                        )
-                      }
-                      className="w-8 h-8 rounded-full bg-surface-hover hover:bg-primary text-white flex items-center justify-center font-bold transition-colors"
-                    >
-                      +
-                    </button>
+                    {isAdmin && (
+                      <button onClick={() => handleUpdateScore(Math.max(0, currentHomeScore - 1), currentAwayScore)} className="w-8 h-8 rounded-full bg-surface-hover hover:bg-primary text-white flex items-center justify-center font-bold transition-colors">-</button>
+                    )}
+                    <span className="text-5xl text-primary font-black">{currentHomeScore}</span>
+                    {isAdmin && (
+                      <button onClick={() => handleUpdateScore(currentHomeScore + 1, currentAwayScore)} className="w-8 h-8 rounded-full bg-surface-hover hover:bg-primary text-white flex items-center justify-center font-bold transition-colors">+</button>
+                    )}
                   </div>
                 </div>
                 <span className="text-3xl text-text-muted font-light mt-8">
@@ -140,31 +126,13 @@ export default function MatchDetails() {
                 <div className="flex flex-col items-center">
                   <span className="text-2xl mb-1">{match.awayTeam}</span>
                   <div className="flex items-center gap-3">
-                    <button
-                      onClick={() =>
-                        handleUpdateScore(
-                          currentHomeScore,
-                          Math.max(0, currentAwayScore - 1),
-                        )
-                      }
-                      className="w-8 h-8 rounded-full bg-surface-hover hover:bg-primary text-white flex items-center justify-center font-bold transition-colors"
-                    >
-                      -
-                    </button>
-                    <span className="text-primary font-black">
-                      {currentAwayScore}
-                    </span>
-                    <button
-                      onClick={() =>
-                        handleUpdateScore(
-                          currentHomeScore,
-                          currentAwayScore + 1,
-                        )
-                      }
-                      className="w-8 h-8 rounded-full bg-surface-hover hover:bg-primary text-white flex items-center justify-center font-bold transition-colors"
-                    >
-                      +
-                    </button>
+                    {isAdmin && (
+                      <button onClick={() => handleUpdateScore(currentHomeScore, Math.max(0, currentAwayScore - 1))} className="w-8 h-8 rounded-full bg-surface-hover hover:bg-primary text-white flex items-center justify-center font-bold transition-colors">-</button>
+                    )}
+                    <span className="text-5xl text-primary font-black">{currentAwayScore}</span>
+                    {isAdmin && (
+                      <button onClick={() => handleUpdateScore(currentHomeScore, currentAwayScore + 1)} className="w-8 h-8 rounded-full bg-surface-hover hover:bg-primary text-white flex items-center justify-center font-bold transition-colors">+</button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -179,105 +147,108 @@ export default function MatchDetails() {
       </div>
 
       <div className="grid md:grid-cols-12 gap-8">
-        <div className="md:col-span-4">
-          <div className="bg-surface border border-surface-hover rounded-2xl p-1 sticky top-6 shadow-lg">
-            <h2 className="font-semibold mb-2 text-lg flex items-center gap-2">
-              <Send className="w-5 h-5 text-primary" /> Post Update
-            </h2>
-            <form onSubmit={handleAddCommentary} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+        {isAdmin && (
+          <div className="md:col-span-4">
+            <div className="bg-surface border border-surface-hover rounded-2xl p-6 sticky top-6 shadow-lg">
+              <h2 className="font-semibold mb-6 text-lg flex items-center gap-2">
+                <Send className="w-5 h-5 text-primary" /> Post Update
+              </h2>
+              <form onSubmit={handleAddCommentary} className="space-y-4">
+                {/* ... existing form fields ... */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-text-muted mb-1.5">
+                      Minute *
+                    </label>
+                    <input
+                      type="number"
+                      value={minute}
+                      onChange={(e) => setMinute(e.target.value)}
+                      placeholder="e.g. 45"
+                      className="w-full px-3 py-2 bg-background border border-surface-hover rounded-xl text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-text-muted mb-1.5">
+                      Period
+                    </label>
+                    <input
+                      type="text"
+                      value={period}
+                      onChange={(e) => setPeriod(e.target.value)}
+                      placeholder="e.g. 1H, 2H"
+                      className="w-full px-3 py-2 bg-background border border-surface-hover rounded-xl text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-text-muted mb-1.5">
+                      Event Type
+                    </label>
+                    <input
+                      type="text"
+                      value={eventType}
+                      onChange={(e) => setEventType(e.target.value)}
+                      placeholder="e.g. goal, foul"
+                      className="w-full px-3 py-2 bg-background border border-surface-hover rounded-xl text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-text-muted mb-1.5">
+                      Team
+                    </label>
+                    <input
+                      type="text"
+                      value={team}
+                      onChange={(e) => setTeam(e.target.value)}
+                      placeholder="e.g. Real Madrid"
+                      className="w-full px-3 py-2 bg-background border border-surface-hover rounded-xl text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                    />
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-xs font-medium text-text-muted mb-1.5">
-                    Minute *
+                    Actor / Player
                   </label>
                   <input
-                    type="number"
-                    value={minute}
-                    onChange={(e) => setMinute(e.target.value)}
-                    placeholder="e.g. 45"
+                    type="text"
+                    value={actor}
+                    onChange={(e) => setActor(e.target.value)}
+                    placeholder="e.g. Sunil Chettri"
                     className="w-full px-3 py-2 bg-background border border-surface-hover rounded-xl text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-text-muted mb-1.5">
+                    Commentary Text *
+                  </label>
+                  <textarea
+                    value={newText}
+                    onChange={(e) => setNewText(e.target.value)}
+                    placeholder="GOAL! Sunil cuts inside..."
+                    rows={4}
+                    className="w-full px-3 py-2 bg-background border border-surface-hover rounded-xl text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none transition-all"
                     required
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-text-muted mb-1.5">
-                    Period
-                  </label>
-                  <input
-                    type="text"
-                    value={period}
-                    onChange={(e) => setPeriod(e.target.value)}
-                    placeholder="e.g. 1H, 2H"
-                    className="w-full px-3 py-2 bg-background border border-surface-hover rounded-xl text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-text-muted mb-1.5">
-                    Event Type
-                  </label>
-                  <input
-                    type="text"
-                    value={eventType}
-                    onChange={(e) => setEventType(e.target.value)}
-                    placeholder="e.g. goal, foul"
-                    className="w-full px-3 py-2 bg-background border border-surface-hover rounded-xl text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-text-muted mb-1.5">
-                    Team
-                  </label>
-                  <input
-                    type="text"
-                    value={team}
-                    onChange={(e) => setTeam(e.target.value)}
-                    placeholder="e.g. Real Madrid"
-                    className="w-full px-3 py-2 bg-background border border-surface-hover rounded-xl text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-text-muted mb-1.5">
-                  Actor / Player
-                </label>
-                <input
-                  type="text"
-                  value={actor}
-                  onChange={(e) => setActor(e.target.value)}
-                  placeholder="e.g. Sunil Chettri"
-                  className="w-full px-3 py-2 bg-background border border-surface-hover rounded-xl text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-text-muted mb-1.5">
-                  Commentary Text *
-                </label>
-                <textarea
-                  value={newText}
-                  onChange={(e) => setNewText(e.target.value)}
-                  placeholder="GOAL! Sunil cuts inside..."
-                  rows={4}
-                  className="w-full px-3 py-2 bg-background border border-surface-hover rounded-xl text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none transition-all"
-                  required
-                />
-              </div>
-              <button
-                type="submit"
-                className="w-full flex justify-center items-center gap-2 py-3 bg-primary hover:bg-primary-dark text-white rounded-xl font-semibold transition-all shadow-lg shadow-primary/20 hover:shadow-primary/40 mt-2"
-              >
-                Broadcast Event
-              </button>
-            </form>
+                <button
+                  type="submit"
+                  className="w-full flex justify-center items-center gap-2 py-3 bg-primary hover:bg-primary-dark text-white rounded-xl font-semibold transition-all shadow-lg shadow-primary/20 hover:shadow-primary/40 mt-2"
+                >
+                  Broadcast Event
+                </button>
+              </form>
+            </div>
           </div>
-        </div>
+        )}
 
-        <div className="md:col-span-8">
-          <h2 className="font-semibold mb-1 text-xl flex items-center gap-2">
+        <div className={isAdmin ? "md:col-span-8" : "md:col-span-12 max-w-3xl mx-auto w-full"}>
+          <h2 className="font-semibold mb-6 text-xl flex items-center gap-2">
             Live Feed
           </h2>
           <LiveFeed commentary={commentary} />

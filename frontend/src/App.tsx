@@ -2,8 +2,8 @@ import {
   BrowserRouter as Router,
   Routes,
   Route,
-  Navigate,
 } from "react-router-dom";
+import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import MatchDetails from "./pages/MatchDetails";
@@ -13,7 +13,7 @@ export default function App() {
     <Router>
       <div className="min-h-screen bg-background text-text selection:bg-primary/30">
         <Routes>
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/match/:id" element={<MatchDetails />} />

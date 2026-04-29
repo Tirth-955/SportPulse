@@ -48,21 +48,26 @@ export default function Dashboard() {
     }
   };
 
+  const isAdmin = !!localStorage.getItem("token");
+
   return (
     <div className="max-w-5xl mx-auto p-6 relative">
       <header className="flex justify-between items-center py-6 mb-8 border-b border-surface-hover">
         <div className="flex items-center gap-3">
           <Activity className="w-8 h-8 text-primary" />
           <h1 className="text-2xl font-bold tracking-tight">
-            SportPulse Admin
+            {isAdmin ? "SportPulse Admin" : "SportPulse Live"}
           </h1>
         </div>
         <button
-          onClick={() => navigate("/login")}
+          onClick={() => {
+            if (isAdmin) localStorage.removeItem("token");
+            navigate("/");
+          }}
           className="flex items-center gap-2 px-4 py-2 text-sm text-text-muted hover:text-white bg-surface hover:bg-surface-hover rounded-lg transition-colors"
         >
           <LogOut className="w-4 h-4" />
-          Sign Out
+          {isAdmin ? "Sign Out" : "Exit to Home"}
         </button>
       </header>
 
@@ -70,15 +75,17 @@ export default function Dashboard() {
         <div>
           <h2 className="text-xl font-semibold mb-1">Matches</h2>
           <p className="text-sm text-text-muted">
-            Manage active and upcoming matches
+            {isAdmin ? "Manage active and upcoming matches" : "View active and upcoming matches"}
           </p>
         </div>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg font-medium transition-colors shadow-lg shadow-primary/20"
-        >
-          + New Match
-        </button>
+        {isAdmin && (
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg font-medium transition-colors shadow-lg shadow-primary/20"
+          >
+            + New Match
+          </button>
+        )}
       </div>
 
       {isLoading ? (
