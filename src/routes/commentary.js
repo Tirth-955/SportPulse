@@ -6,6 +6,7 @@ import { db } from "../db/db.js";
 import { commentary } from "../db/schema.js";
 import { catchAsync } from "../utils/catchAsync.js";
 import { AppError } from "../utils/AppError.js";
+import { protect } from "../middleware/auth.js";
 
 const MAX_LIMIT = 100;
 
@@ -38,7 +39,7 @@ commentaryRouter.get("/", catchAsync(async (req, res, next) => {
     res.status(200).json({ data: results });
 }));
 
-commentaryRouter.post("/", catchAsync(async (req, res, next) => {
+commentaryRouter.post("/", protect, catchAsync(async (req, res, next) => {
     const paramsResult = matchIdParamSchema.safeParse(req.params);
 
     if (!paramsResult.success) {

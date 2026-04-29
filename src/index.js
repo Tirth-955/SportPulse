@@ -8,6 +8,7 @@ import { matchRouter } from "./routes/matches.js";
 import { attachWebSocketServer } from "./ws/server.js";
 import { securityMiddleware } from "./arcjet.js";
 import { commentaryRouter } from "./routes/commentary.js";
+import { authRouter } from "./routes/auth.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { AppError } from "./utils/AppError.js";
 
@@ -25,6 +26,7 @@ app.get("/", (req, res) => {
 
 app.use(securityMiddleware());
 
+app.use("/auth", authRouter);
 app.use("/matches", matchRouter);
 app.use("/matches/:id/commentary", commentaryRouter);
 

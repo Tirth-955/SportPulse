@@ -62,3 +62,16 @@ export const commentary = pgTable("commentary", {
         .defaultNow()
         .notNull(),
 });
+
+// USERS TABLE
+export const users = pgTable("users", {
+    id: serial("id").primaryKey(),
+
+    username: text("username", { length: 50 }).notNull().unique(),
+
+    password: text("password").notNull(),
+
+    createdAt: timestamp("created_at", { withTimezone: true })
+        .defaultNow()
+        .notNull(),
+});
