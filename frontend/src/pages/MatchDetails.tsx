@@ -1,33 +1,45 @@
-import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Send, Clock, Activity } from 'lucide-react';
+import { useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { ArrowLeft, Send, Clock, Activity } from "lucide-react";
+
+interface Commentary {
+  id: number;
+  text: string;
+  minute: number;
+  timestamp: string;
+}
 
 export default function MatchDetails() {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [commentary, setCommentary] = useState([]);
-  const [newText, setNewText] = useState('');
-  const [minute, setMinute] = useState('');
+  const [commentary, setCommentary] = useState<Commentary[]>([]);
+  const [newText, setNewText] = useState("");
+  const [minute, setMinute] = useState("");
 
   // Example match data
-  const match = { title: 'Manchester City vs Arsenal', status: 'LIVE' };
+  const match = { title: "Manchester City vs Arsenal", status: "LIVE" };
 
-  const handleAddCommentary = (e) => {
+  const handleAddCommentary = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newText || !minute) return;
 
     // Simulate sending to backend API (Port 8000)
-    const newEntry = { id: Date.now(), text: newText, minute: parseInt(minute), timestamp: new Date().toISOString() };
+    const newEntry: Commentary = {
+      id: Date.now(),
+      text: newText,
+      minute: parseInt(minute),
+      timestamp: new Date().toISOString(),
+    };
     setCommentary([newEntry, ...commentary]);
-    setNewText('');
-    setMinute('');
+    setNewText("");
+    setMinute("");
   };
 
   return (
     <div className="max-w-5xl mx-auto p-6">
       <header className="flex justify-between items-center mb-8 border-b border-surface-hover pb-6">
-        <button 
-          onClick={() => navigate('/dashboard')}
+        <button
+          onClick={() => navigate("/dashboard")}
           className="flex items-center gap-2 px-3 py-1.5 text-sm text-text-muted hover:text-white bg-surface hover:bg-surface-hover rounded-lg transition-colors"
         >
           <ArrowLeft className="w-4 h-4" /> Back
@@ -44,10 +56,16 @@ export default function MatchDetails() {
             <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
             {match.status}
           </span>
-          <span className="text-sm font-medium text-text-muted">Match ID: {id}</span>
+          <span className="text-sm font-medium text-text-muted">
+            Match ID: {id}
+          </span>
         </div>
-        <h1 className="text-4xl font-bold tracking-tight mb-2">{match.title}</h1>
-        <p className="text-primary text-sm font-medium mt-2">API Connection: WebSocket = ws://localhost:8000 ready</p>
+        <h1 className="text-4xl font-bold tracking-tight mb-2">
+          {match.title}
+        </h1>
+        <p className="text-primary text-sm font-medium mt-2">
+          API Connection: WebSocket -ws://localhost:8000 ready
+        </p>
       </div>
 
       <div className="grid md:grid-cols-12 gap-8">
@@ -58,7 +76,9 @@ export default function MatchDetails() {
             </h2>
             <form onSubmit={handleAddCommentary} className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-text-muted mb-2">Minute</label>
+                <label className="block text-sm font-medium text-text-muted mb-2">
+                  Minute
+                </label>
                 <input
                   type="number"
                   value={minute}
@@ -69,7 +89,9 @@ export default function MatchDetails() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-text-muted mb-2">Commentary Text</label>
+                <label className="block text-sm font-medium text-text-muted mb-2">
+                  Commentary Text
+                </label>
                 <textarea
                   value={newText}
                   onChange={(e) => setNewText(e.target.value)}
@@ -91,7 +113,7 @@ export default function MatchDetails() {
 
         <div className="md:col-span-8">
           <h2 className="font-semibold mb-6 text-xl flex items-center gap-2">
-             Live Feed
+            Live Feed
           </h2>
           {commentary.length === 0 ? (
             <div className="p-12 flex flex-col items-center justify-center text-center bg-surface/30 border border-surface-hover rounded-3xl border-dashed">
@@ -99,17 +121,25 @@ export default function MatchDetails() {
                 <Clock className="w-8 h-8 text-text-muted" />
               </div>
               <h3 className="text-lg font-medium mb-1">Awaiting updates</h3>
-              <p className="text-text-muted max-w-sm text-sm">Post the first event to begin the live commentary broadcast for this match.</p>
+              <p className="text-text-muted max-w-sm text-sm">
+                Post the first event to begin the live commentary broadcast for
+                this match.
+              </p>
             </div>
           ) : (
             <div className="space-y-4">
               {commentary.map((c) => (
-                <div key={c.id} className="group flex gap-5 p-5 bg-surface border border-surface-hover hover:border-primary/30 rounded-2xl shadow-sm transition-all hover:shadow-md">
+                <div
+                  key={c.id}
+                  className="group flex gap-5 p-5 bg-surface border border-surface-hover hover:border-primary/30 rounded-2xl shadow-sm transition-all hover:shadow-md"
+                >
                   <div className="flex-shrink-0 w-14 h-14 rounded-full bg-background flex items-center justify-center font-bold text-lg text-primary border border-surface-hover group-hover:border-primary/50 group-hover:scale-110 transition-all shadow-inner">
                     {c.minute}'
                   </div>
                   <div className="pt-1">
-                    <p className="text-text leading-relaxed text-[15px]">{c.text}</p>
+                    <p className="text-text leading-relaxed text-[15px]">
+                      {c.text}
+                    </p>
                     <p className="text-xs text-text-muted mt-3 font-medium flex items-center gap-1.5">
                       <Clock className="w-3 h-3" /> Just now via Admin Dashboard
                     </p>

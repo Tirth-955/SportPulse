@@ -8,7 +8,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import MatchDetails from "./pages/MatchDetails";
 
-function App() {
+export default function App() {
   return (
     <Router>
       <div className="min-h-screen bg-background text-text selection:bg-primary/30">
@@ -22,5 +22,3 @@ function App() {
     </Router>
   );
 }
-
-export default App;
