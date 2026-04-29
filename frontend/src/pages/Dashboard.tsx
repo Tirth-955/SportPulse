@@ -1,27 +1,22 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Activity,
-  Calendar,
-  MapPin,
-  ChevronRight,
-  LogOut,
-  X,
-} from "lucide-react";
-
-interface Match {
-  id: string;
-  homeTeam: string;
-  awayTeam: string;
-  sport: string;
-  startTime: string;
-  endTime: string;
-  status: "UPCOMING" | "LIVE" | "FINISHED";
-}
+import { Activity, LogOut, X } from "lucide-react";
+import { useMatches } from "../hooks/useMatches";
+import { MatchCard } from "../components/MatchCard";
+import { api } from "../services/api";
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const [matches, setMatches] = useState<Match[]>([]);
+  const {
+    pagedMatches,
+    matches,
+    isLoading,
+    currentPage,
+    totalPages,
+    setCurrentPage,
+    refreshMatches,
+  } = useMatches(5);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [sport, setSport] = useState("football");
   const [homeTeam, setHomeTeam] = useState("");
@@ -29,55 +24,25 @@ export default function Dashboard() {
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
 
-  const fetchMatches = async () => {
-    try {
-      const res = await fetch("/api/v1/matches");
-      const json = await res.json();
-      if (res.ok) {
-        setMatches(json.data || []);
-      }
-    } catch (err) {
-      console.error("Failed to fetch matches:", err);
-    }
-  };
-
-  useEffect(() => {
-    fetchMatches();
-  }, []);
-
   const handleCreateMatch = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch("/api/v1/matches", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          sport,
-          homeTeam,
-          awayTeam,
-          startTime: new Date(startTime).toISOString(),
-          endTime: new Date(endTime).toISOString(),
-        }),
+      await api.createMatch({
+        sport,
+        homeTeam,
+        awayTeam,
+        startTime: new Date(startTime).toISOString(),
+        endTime: new Date(endTime).toISOString(),
       });
 
-      if (res.ok) {
-        setIsModalOpen(false);
-        setHomeTeam("");
-        setAwayTeam("");
-        setStartTime("");
-        setEndTime("");
-        fetchMatches(); // refresh list
-      } else {
-        const error = await res.json();
-        alert(error.message || "Failed to create match");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Network error");
+      setIsModalOpen(false);
+      setHomeTeam("");
+      setAwayTeam("");
+      setStartTime("");
+      setEndTime("");
+      refreshMatches();
+    } catch (err: any) {
+      alert(err.message || "Failed to create match");
     }
   };
 
@@ -114,44 +79,59 @@ export default function Dashboard() {
         </button>
       </div>
 
-      <div className="grid gap-4">
-        {matches.map((match) => (
-          <div
-            key={match.id}
-            onClick={() => navigate(`/match/${match.id}`)}
-            className="group flex items-center justify-between p-5 bg-surface border border-surface-hover hover:border-primary/50 rounded-xl cursor-pointer transition-all hover:shadow-lg"
-          >
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                {match.status === "LIVE" ? (
-                  <span className="px-2.5 py-0.5 text-xs font-bold text-white bg-red-500 rounded-full animate-pulse">
-                    LIVE
-                  </span>
-                ) : (
-                  <span className="px-2.5 py-0.5 text-xs font-semibold text-primary bg-primary/10 rounded-full uppercase">
-                    {match.status}
-                  </span>
-                )}
-                <h3 className="text-lg font-bold group-hover:text-primary transition-colors">
-                  {match.homeTeam} vs {match.awayTeam}
-                </h3>
+      {isLoading ? (
+        <div className="p-12 text-center text-text-muted">
+          Loading matches...
+        </div>
+      ) : (
+        <>
+          <div className="grid gap-4">
+            {pagedMatches.map((match) => (
+              <MatchCard key={match.id} match={match} />
+            ))}
+            {matches.length === 0 && (
+              <div className="p-12 text-center text-text-muted bg-surface/30 rounded-2xl border border-dashed border-surface-hover">
+                No matches found.
               </div>
-              <div className="flex gap-4 text-sm text-text-muted">
-                <span className="flex items-center gap-1.5">
-                  <Calendar className="w-4 h-4" />{" "}
-                  {new Date(match.startTime).toLocaleDateString()}
-                </span>
-                <span className="flex items-center gap-1.5 uppercase tracking-wide text-xs font-bold">
-                  {match.sport}
-                </span>
-              </div>
-            </div>
-            <div className="p-2 bg-background rounded-full group-hover:bg-primary/10 transition-colors">
-              <ChevronRight className="w-6 h-6 text-text-muted group-hover:text-primary transition-colors group-hover:translate-x-1" />
-            </div>
+            )}
           </div>
-        ))}
-      </div>
+
+          {/* Pagination Controls */}
+          {matches.length > 0 && (
+            <div className="mt-6 flex items-center justify-between px-2">
+              <span className="text-sm text-text-muted font-medium">
+                Page {currentPage} of {totalPages}
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
+                    currentPage === 1
+                      ? "bg-surface text-text-muted cursor-not-allowed opacity-50"
+                      : "bg-surface hover:bg-surface-hover text-text hover:text-white"
+                  }`}
+                >
+                  Prev
+                </button>
+                <button
+                  onClick={() =>
+                    setCurrentPage((p) => Math.min(totalPages, p + 1))
+                  }
+                  disabled={currentPage === totalPages}
+                  className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
+                    currentPage === totalPages
+                      ? "bg-surface text-text-muted cursor-not-allowed opacity-50"
+                      : "bg-surface hover:bg-surface-hover text-text hover:text-white"
+                  }`}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
 
       {/* New Match Modal */}
       {isModalOpen && (

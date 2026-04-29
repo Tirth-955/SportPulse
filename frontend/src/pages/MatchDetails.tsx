@@ -1,100 +1,50 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Send, Clock, Activity } from "lucide-react";
-
-interface Commentary {
-  id: string | number;
-  message: string;
-  minute: number;
-  createdAt?: string;
-  matchId?: string;
-}
+import { ArrowLeft, Send, Activity } from "lucide-react";
+import { Match, Commentary } from "../types";
+import { api } from "../services/api";
+import { useWebSocket } from "../hooks/useWebSocket";
+import { LiveFeed } from "../components/LiveFeed";
+import { StatusIndicator } from "../components/StatusIndicator";
 
 export default function MatchDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [commentary, setCommentary] = useState<Commentary[]>([]);
   const [newText, setNewText] = useState("");
   const [minute, setMinute] = useState("");
-  const [match, setMatch] = useState<any>(null);
+  const [match, setMatch] = useState<Match | null>(null);
 
-  // Fetch initial match info & commentary
+  const { commentary, status, setCommentary } = useWebSocket(id);
+
+  // Fetch initial match info & past commentary
   useEffect(() => {
     const fetchMatchAndCommentary = async () => {
+      if (!id) return;
       try {
-        const [matchRes, commRes] = await Promise.all([
-          fetch(`/api/v1/matches/${id}`),
-          fetch(`/api/v1/matches/${id}/commentary`),
+        const [matchData, commData] = await Promise.all([
+          api.getMatch(id),
+          api.getCommentary(id),
         ]);
-
-        if (matchRes.ok) {
-          const matchJson = await matchRes.json();
-          setMatch(matchJson.data);
-        }
-
-        if (commRes.ok) {
-          const commJson = await commRes.json();
-          setCommentary(commJson.data || []);
-        }
+        setMatch(matchData);
+        setCommentary(commData);
       } catch (err) {
         console.error("Failed to load match data", err);
       }
     };
     fetchMatchAndCommentary();
-  }, [id]);
-
-  // Setup WebSocket for live updates
-  useEffect(() => {
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
-    const ws = new WebSocket(wsUrl);
-
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.type === "NEW_COMMENTARY" && data.payload.matchId === id) {
-          setCommentary((prev) => [data.payload, ...prev]);
-        }
-      } catch (err) {
-        console.error("WS parsing error", err);
-      }
-    };
-
-    return () => {
-      ws.close();
-    };
-  }, [id]);
+  }, [id, setCommentary]);
 
   const handleAddCommentary = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newText || !minute) return;
+    if (!id || !newText || !minute) return;
 
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`/api/v1/matches/${id}/commentary`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          message: newText,
-          minute: parseInt(minute),
-        }),
-      });
-
-      if (res.ok) {
-        setNewText("");
-        setMinute("");
-        // We don't manually append to state here because we expect
-        // the WebSocket connection to broadcast it back to us!
-      } else {
-        const error = await res.json();
-        alert(error.message || "Failed to post commentary");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Network error");
+      await api.postCommentary(id, newText, parseInt(minute));
+      setNewText("");
+      setMinute("");
+      // No state append needed; WebSocket handles the live update
+    } catch (err: any) {
+      alert(err.message || "Failed to post commentary");
     }
   };
 
@@ -113,24 +63,26 @@ export default function MatchDetails() {
         </div>
       </header>
 
-      <div className="bg-gradient-to-r from-surface to-background border border-surface-hover rounded-2xl p-8 mb-8 shadow-xl">
-        <div className="flex items-center gap-3 mb-4">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold text-white bg-red-500 rounded-full animate-pulse shadow-lg shadow-red-500/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
-            {match ? match.status : "LIVE"}
-          </span>
-          <span className="text-sm font-medium text-text-muted">
-            Match ID: {id}
-          </span>
+      <div className="bg-gradient-to-r from-surface to-background border border-surface-hover p-2 mb-4 shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div>
+          <div className="flex items-center gap-3">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold text-white bg-red-500 rounded-full animate-pulse shadow-lg shadow-red-500/20">
+              <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
+              {match ? match.status : "LIVE"}
+            </span>
+            <span className="text-sm font-medium text-text-muted">
+              Match ID: {id}
+            </span>
+          </div>
+          <h1 className="text-4xl font-bold tracking-tight">
+            {match
+              ? `${match.homeTeam} vs ${match.awayTeam}`
+              : "Loading Match..."}
+          </h1>
         </div>
-        <h1 className="text-4xl font-bold tracking-tight mb-2">
-          {match
-            ? `${match.homeTeam} vs ${match.awayTeam}`
-            : "Loading Match..."}
-        </h1>
-        <p className="text-primary text-sm font-medium mt-2">
-          Connected to WebSockets
-        </p>
+        <div>
+          <StatusIndicator status={status} />
+        </div>
       </div>
 
       <div className="grid md:grid-cols-12 gap-8">
@@ -177,45 +129,10 @@ export default function MatchDetails() {
         </div>
 
         <div className="md:col-span-8">
-          <h2 className="font-semibold mb-6 text-xl flex items-center gap-2">
+          <h2 className="font-semibold mb-1 text-xl flex items-center gap-2">
             Live Feed
           </h2>
-          {commentary.length === 0 ? (
-            <div className="p-12 flex flex-col items-center justify-center text-center bg-surface/30 border border-surface-hover rounded-3xl border-dashed">
-              <div className="p-4 bg-background rounded-full mb-4 shadow-inner">
-                <Clock className="w-8 h-8 text-text-muted" />
-              </div>
-              <h3 className="text-lg font-medium mb-1">Awaiting updates</h3>
-              <p className="text-text-muted max-w-sm text-sm">
-                Post the first event to begin the live commentary broadcast for
-                this match.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {commentary.map((c) => (
-                <div
-                  key={c.id}
-                  className="group flex gap-5 p-5 bg-surface border border-surface-hover hover:border-primary/30 rounded-2xl shadow-sm transition-all hover:shadow-md"
-                >
-                  <div className="flex-shrink-0 w-14 h-14 rounded-full bg-background flex items-center justify-center font-bold text-lg text-primary border border-surface-hover group-hover:border-primary/50 group-hover:scale-110 transition-all shadow-inner">
-                    {c.minute}'
-                  </div>
-                  <div className="pt-1">
-                    <p className="text-text leading-relaxed text-[15px]">
-                      {c.message}
-                    </p>
-                    <p className="text-xs text-text-muted mt-3 font-medium flex items-center gap-1.5">
-                      <Clock className="w-3 h-3" />{" "}
-                      {c.createdAt
-                        ? new Date(c.createdAt).toLocaleTimeString()
-                        : "Just now"}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          <LiveFeed commentary={commentary} />
         </div>
       </div>
     </div>

@@ -12,7 +12,7 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
+      const endpoint = isLogin ? "/api/v1/auth/login" : "/api/v1/auth/register";
       const body = { username, password };
 
       const res = await fetch(endpoint, {
