@@ -1,10 +1,14 @@
 import { Router } from "express";
 
-import { createMatchSchema, listMatchesQuerySchema } from "../validation/matches.js";
+import {
+    createMatchSchema,
+    listMatchesQuerySchema,
+    matchIdParamSchema
+} from "../validation/matches.js";
 import { matches } from "../db/schema.js";
 import { db } from "../db/db.js"
 import { getMatchStatus } from "../utils/matchStatus.js";
-import { desc } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { catchAsync } from "../utils/catchAsync.js";
 import { AppError } from "../utils/AppError.js";
 import { protect } from "../middleware/auth.js";
@@ -29,6 +33,26 @@ matchRouter.get("/", catchAsync(async (req, res, next) => {
         .limit(limit);
 
     res.json({ data });
+}));
+
+matchRouter.get("/:id", catchAsync(async (req, res, next) => {
+    const parsed = matchIdParamSchema.safeParse(req.params);
+
+    if (!parsed.success) {
+        return next(new AppError("Invalid Match ID.", 400, parsed.error.issues));
+    }
+
+    const [match] = await db
+        .select()
+        .from(matches)
+        .where(eq(matches.id, parsed.data.id))
+        .limit(1);
+
+    if (!match) {
+        return next(new AppError("Match not found.", 404));
+    }
+
+    res.json({ data: match });
 }));
 
 matchRouter.post("/", protect, catchAsync(async (req, res, next) => {
@@ -61,4 +85,36 @@ matchRouter.post("/", protect, catchAsync(async (req, res, next) => {
     }
 
     res.status(201).json({ data: event });
+}));
+
+matchRouter.patch("/:id/score", protect, catchAsync(async (req, res, next) => {
+    const paramsResult = matchIdParamSchema.safeParse(req.params);
+    if (!paramsResult.success) {
+        return next(new AppError("Invalid Match ID.", 400, paramsResult.error.issues));
+    }
+
+    const { updateScoreSchema } = await import("../validation/matches.js");
+
+    const bodyResult = updateScoreSchema.safeParse(req.body);
+    if (!bodyResult.success) {
+        return next(new AppError("Invalid Score Payload.", 400, bodyResult.error.issues));
+    }
+
+    const { id: matchId } = paramsResult.data;
+    const { homeScore, awayScore } = bodyResult.data;
+
+    const [updatedMatch] = await db.update(matches)
+        .set({ homeScore, awayScore })
+        .where(eq(matches.id, matchId))
+        .returning();
+
+    if (!updatedMatch) {
+        return next(new AppError("Match not found.", 404));
+    }
+
+    if (res.app.locals.broadcastScoreUpdate) {
+        res.app.locals.broadcastScoreUpdate(matchId, { homeScore, awayScore });
+    }
+
+    res.json({ data: updatedMatch });
 }));

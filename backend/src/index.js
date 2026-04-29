@@ -1,5 +1,6 @@
 import express from "express";
 import http from "http";
+import cors from "cors";
 
 import dns from "dns";
 dns.setDefaultResultOrder("ipv4first");
@@ -18,6 +19,11 @@ const HOST = process.env.HOST || "0.0.0.0";
 const app = express();
 const server = http.createServer(app);
 
+app.use(cors({
+    origin: "http://localhost:3000",
+    credentials: true
+}));
+
 app.use(express.json());
 
 app.get("/", (req, res) => {
@@ -26,9 +32,9 @@ app.get("/", (req, res) => {
 
 app.use(securityMiddleware());
 
-app.use("/auth", authRouter);
-app.use("/matches", matchRouter);
-app.use("/matches/:id/commentary", commentaryRouter);
+app.use("/api/v1/auth", authRouter);
+app.use("/api/v1/matches", matchRouter);
+app.use("/api/v1/matches/:id/commentary", commentaryRouter);
 
 // Catch unhandled routes
 app.use((req, res, next) => {
@@ -38,9 +44,10 @@ app.use((req, res, next) => {
 // Global error handling middleware
 app.use(errorHandler);
 
-const { broadcastMatchCreated, broadcastCommentary } = attachWebSocketServer(server);
+const { broadcastMatchCreated, broadcastCommentary, broadcastScoreUpdate } = attachWebSocketServer(server);
 app.locals.broadcastMatchCreated = broadcastMatchCreated;
 app.locals.broadcastCommentary = broadcastCommentary;
+app.locals.broadcastScoreUpdate = broadcastScoreUpdate;
 
 server.listen(PORT, HOST, () => {
     const baseUrl = HOST === '0.0.0.0' ? `http://localhost:${PORT}` : `http://${HOST}:${PORT}`;
