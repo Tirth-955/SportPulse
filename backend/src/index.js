@@ -1,5 +1,6 @@
 import express from "express";
 import http from "http";
+import cors from "cors";
 
 import dns from "dns";
 dns.setDefaultResultOrder("ipv4first");
@@ -17,6 +18,11 @@ const HOST = process.env.HOST || "0.0.0.0";
 
 const app = express();
 const server = http.createServer(app);
+
+app.use(cors({
+    origin: "http://localhost:3000",
+    credentials: true
+}));
 
 app.use(express.json());
 
