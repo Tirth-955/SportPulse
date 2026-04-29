@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Send, Activity } from "lucide-react";
-import { Match, Commentary } from "../types";
+import { Match } from "../types";
 import { api } from "../services/api";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { LiveFeed } from "../components/LiveFeed";
@@ -94,7 +94,7 @@ export default function MatchDetails() {
         </div>
       </header>
 
-      <div className="bg-gradient-to-r from-surface to-background border border-surface-hover p-2 mb-4 shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      <div className="from-surface to-background border border-surface-hover p-2 mb-4 shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
           <div className="flex items-center gap-3">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold text-white bg-red-500 rounded-full animate-pulse shadow-lg shadow-red-500/20">
